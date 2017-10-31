@@ -7,10 +7,9 @@ from pyrocko import guts
 from mattermostdriver import Driver as MattermostDriver
 
 from rockbot import events
+from rockbot import handlers
 
 op = os.path
-logger = logging.getLogger('rockbot')
-
 
 class BotConfig(guts.Object):
     url = guts.String.T(
@@ -42,7 +41,7 @@ class BotConfig(guts.Object):
             c.username = None
             c.password = None   
 
-        return Bot(
+        return RockBot(
             url=c.url,
             port=c.port,
             login_id=c.username,
@@ -52,7 +51,7 @@ class BotConfig(guts.Object):
             team=c.team)
 
 
-class Bot(MattermostDriver):
+class RockBot(MattermostDriver):
 
     def __init__(self, url, login_id=None, password=None,
                  token=None, port=80, channel=None, team=None):
@@ -69,12 +68,16 @@ class Bot(MattermostDriver):
             }
 
         MattermostDriver.__init__(self, self.driver_args)
+        self.log = logging.getLogger('rockbot')
 
         self.channel = channel
         self.team = team
 
+        self.handlers = []
+        self.init_handlers()
+
     def connect(self):
-        logger.info('Logging into %s:%d ...'
+        self.log.info('Logging into %s:%d ...'
             % (self.driver_args['url'], self.driver_args['port']))
         self.login()
         self.channel_id = self.get_channel_id(
@@ -84,17 +87,20 @@ class Bot(MattermostDriver):
         self.post('%s is alive! :heart:' % self.__class__.__name__)
         self.loop = self.init_websocket(self.event_handler)
 
+    def init_handlers(self):
+        for h in handlers.AVAILABLE:
+            handler = h(self)
+            self.handlers.append(handler)
+            self.log.info('Added handler %s' % handler.__class__.__name__)
+
     def get_channel_id(self, team_name, channel_name):
         r = self.api['channels'].get_channel_by_name_and_team_name(
                 team_name=team_name,
                 channel_name=channel_name)
         return r
 
-    def load_handlers(self):
-        pass
-
     def post(self, message):
-        logger.info('Posting into %s: %s' % (self.channel, message))
+        self.log.info('Posting into %s: %s' % (self.channel, message))
         self.api['posts']\
             .create_post({
                 'channel_id': self.channel_id,
@@ -102,18 +108,20 @@ class Bot(MattermostDriver):
             })
 
     async def event_handler(self, *args):
-        event = json.loads(args[0])
-        # print(json.dumps(event, sort_keys=True,
+        data = json.loads(args[0])
+        # print(json.dumps(data, sort_keys=True,
         #                  indent=4, separators=(',', ': ')))
-        if 'event' in event:
-            if event['event'] in events.TYPES:
-                ev = events.TYPES[event['event']](event)
+        if 'event' in data:
+            if data['event'] in events.AVAILABLE:
+                ev = events.AVAILABLE[data['event']](data)
                 await self.process_event(ev)
                 return
-        logging.debug('Could not handle *%s*' % event)
+        self.log.debug('Could not handle *%s*' % data)
 
-    async def process_event(self, ev):
-        pass
+    async def process_event(self, event):
+        for handler in self.handlers:
+            if event.__class__ in handler.hooks:
+                handler.process(event)
 
 
 

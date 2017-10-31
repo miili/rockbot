@@ -1,1 +1,1 @@
-from rockbot.main import Bot, main  # noqa
+from rockbot.main import RockBot, main  # noqa

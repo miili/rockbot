@@ -1,1 +1,4 @@
-from .base import *  # noqa
+from .base import VersionHandler
+
+
+AVAILABLE = [VersionHandler]  # noqa

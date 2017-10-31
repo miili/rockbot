@@ -30,13 +30,11 @@ class HelloEvent(Event):
 
     def __init__(self, event):
         Event.__init__(self, event)
-        self.version = self.data['server_version']
+        self.server_version = self.data['server_version']
 
 
 class PostedEvent(Event):
     event = 'posted'
-    bot_userid = None
-    mentioned_handler = []
 
     def __init__(self, data):
         Event.__init__(self, data)
@@ -53,7 +51,7 @@ class PostedEvent(Event):
         return False
 
 
-TYPES = {
+AVAILABLE = {
     'hello': HelloEvent,
     'posted': PostedEvent
 }
