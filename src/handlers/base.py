@@ -1,0 +1,2 @@
+class RockHandler(object):
+    pass
