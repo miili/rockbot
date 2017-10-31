@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import json
 logger = logging.getLogger('rockbot.events')
 
 class AttrDict(dict):
@@ -45,8 +46,8 @@ class PostedEvent(Event):
         for k, v in json.loads(self.data['post']).items():
             self.__setattr__(k, v)
 
-    def is_mentioned(self, bot):
-        if bot.userid in self.mentions:
+    def is_mentioned(self, userid):
+        if userid in self.mentions:
             return True
         return False
 

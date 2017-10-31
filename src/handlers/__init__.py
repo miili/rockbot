@@ -1,4 +1,4 @@
-from .base import VersionHandler
+from .base import VersionHandler, PingHandler, AgeHandler
 
 
-AVAILABLE = [VersionHandler]  # noqa
+AVAILABLE = [VersionHandler, PingHandler, AgeHandler]  # noqa
